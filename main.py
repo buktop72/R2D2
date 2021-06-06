@@ -42,8 +42,11 @@ class R2D2_bot: # основной класс
             self.user_params.update(last_name = user_info['last_name'])
             today = date.today()
             if 'bdate' in user_info:
-                age_str = today.year - int(user_info['bdate'].split('.')[2]) 
-                self.user_params.update(age = age_str)
+                if len(user_info['bdate'].split('.')) == 3: # проверяем что указан год рождения
+                    age_str = today.year - int(user_info['bdate'].split('.')[2]) 
+                    self.user_params.update(age = age_str)
+                else:
+                    self.user_params.update(age = None) # если не указан год, то None
             if 'city' in user_info:
                 self.user_params.update(city = user_info['city']['title'])
                 self.city = user_info['city']['id']
@@ -71,7 +74,7 @@ class R2D2_bot: # основной класс
             send_msg(self.user_id, 'Введите свой id')
             for new_event in longpoll.listen():
                 if new_event.type == VkEventType.MESSAGE_NEW and new_event.to_me:
-                    self.id = new_event.message.lower()
+                    self.id = int(new_event.message.lower())
                     break          
             return self.bot_menu()
 
@@ -85,11 +88,14 @@ class R2D2_bot: # основной класс
 
     # Получаем параметры поиска 
     def start(self): # 2
-        self.get_user_name() # Получаем имя юзера
+        self.get_user_name() # Получаем имя юзера и др.
         db.create_tables()
-        self.user = db.User(vk_id=self.user_id, first_name=self.user_params['first_name'], last_name=self.user_params['last_name'],
+        self.user = db.User(vk_id = self.id, first_name=self.user_params['first_name'], last_name=self.user_params['last_name'],
             range_age=self.user_params['age'], city=self.city)
-        db.add_user(self.user)
+        if not db.check(self.id):
+            db.add_user(self.user)  # добавляем запись в таблицу 'User'
+        else:
+            self.user.id = db.check(self.id)
         sity = self.user_params['city']
         if self.user_params['sex'] == 1:  
             sex = 'женский' 
@@ -130,7 +136,7 @@ class R2D2_bot: # основной класс
                 if new_event.type == VkEventType.MESSAGE_NEW and new_event.to_me:
                     if new_event.message.lower() == 'в':
                         send_msg(self.user_id, 'Вы добавили следующих людей в базу:')
-                        dating_users = db.view_all(self.user_id)
+                        dating_users = db.view_all(self.id)
                         for dating_user in dating_users:
                             send_msg(self.user_id, f'https://vk.com/id{dating_user}')
                         send_msg(self.user_id, self.bot_menu.__doc__)
@@ -186,7 +192,7 @@ class R2D2_bot: # основной класс
                     if new_event.message.lower() == 'д':
                         dating_user = db.DatingUser(vk_id=self.dating_user_id, first_name=self.first_name,
                                                     last_name=self.last_name, id_User=self.user.id)
-                        db.add_user(dating_user)
+                        db.add_user(dating_user) # добавляем запись в таблицу 'DatingUser'
                         send_msg(self.user_id, 'Пользователь добавлен в базу, продолжить?')
                         for new_event in longpoll.listen():
                             if new_event.type == VkEventType.MESSAGE_NEW and new_event.to_me:

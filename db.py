@@ -1,48 +1,49 @@
-import sqlalchemy as sq
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy import Column, String, Integer, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.sql.operators import exists
 
-Base = declarative_base()
-
+Base = declarative_base() 
+# создаем объект класса Engine (диалект://log:passwd@url:port/db_name)
 engine = sq.create_engine('путь к БД')
-Session = sessionmaker(bind=engine)
-session = Session()
+Session = sessionmaker(bind=engine)  # Создаем фабрику для создания экземпляров Session
+session = Session()  # Создаем объект сессии из вышесозданной фабрики Session
 
 
 # Таблица с данными пользователя
 class User(Base):
     __tablename__ = 'user'
-    id = sq.Column(sq.Integer, primary_key=True)
-    vk_id = sq.Column(sq.Integer)
-    first_name = sq.Column(sq.String)
-    last_name = sq.Column(sq.String)
-    range_age = sq.Column(sq.String)
-    city = sq.Column(sq.String)
+    id = Column(Integer, primary_key=True)
+    vk_id = Column(Integer, unique = True)
+    first_name = Column(String)
+    last_name = Column(String)
+    range_age = Column(String)
+    city = Column(String)
 
 
 
 # Таблица подобранных пар
 class DatingUser(Base):
     __tablename__ = 'datinguser'
-    id = sq.Column(sq.Integer, primary_key=True)
-    vk_id = sq.Column(sq.Integer)       # id юзера-половинки
-    first_name = sq.Column(sq.String)   # имя
-    last_name = sq.Column(sq.String)    # фамилия
-    id_User = sq.Column(sq.Integer, sq.ForeignKey('user.id')) # 
+    id = Column(Integer, primary_key=True)
+    vk_id = Column(Integer)       # id юзера-половинки
+    first_name = Column(String)   # имя
+    last_name = Column(String)    # фамилия
+    id_User = Column(Integer, ForeignKey('user.id')) # 
     user = relationship(User)
 
 
 # Создать пустые таблицы в БД 
 def create_tables():
-    Base.metadata.create_all(engine)
+    Base.metadata.create_all(engine)  # Метод create_all создает таблицы в БД (если они не сущ-т), определенные с помощью  DeclarativeBase (Base)
 
 
 # Добавляем пользователя в БД
 def add_user(user):
-    session.expire_on_commit = False
-    session.add(user)
-    session.commit()
+    session.expire_on_commit = False  # По умолчанию True, тогда все экземпляры будут полностью просрочены после каждого commit()
+    session.add(user)  # добавление объекта в сессию
+    session.commit()  # применяем все изменения в базу данных и фиксируем все транзакции
 
 
 
@@ -57,4 +58,17 @@ def view_all(user_id):
     for link in dating_users_list:
         links.append(link)
     return links
+
+# проверяем наличие пользователя в базе
+def check(user_id):
+    vk_id_query = session.query(User)
+    vk_id_list = [i.vk_id for i in vk_id_query]
+    if user_id in vk_id_list:
+        vk_id_query = session.query(User).filter(User.vk_id == 44633124).limit(1)
+        return [j.id for j in vk_id_query][0]        
+    else:
+        return False
+
+
+
 
