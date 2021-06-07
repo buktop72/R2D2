@@ -173,13 +173,21 @@ class R2D2_bot: # основной класс
             for dating_user_id in response.json()['response']['items']:
                 private = dating_user_id['is_closed']
                 if private:
+                    print('private')
                     self.offset += 1
                     self.find_user_data()
                 else:
+                    print('not private')
                     self.dating_user_id = dating_user_id['id']
+                    print(self.dating_user_id)
                     self.first_name = dating_user_id['first_name']
                     self.last_name = dating_user_id['last_name']
+                    # проверим наличие кандидата в базе, если есть - игнорим
+                    if db.check_half(self.dating_user_id):
+                        self.offset += 1
+                        self.find_user_data()
         else:
+            print('not response')
             self.offset += 1
             self.find_user_data()
 
@@ -215,8 +223,6 @@ class R2D2_bot: # основной класс
         send_msg(self.user_id, 'Ищем дальше')
         self.offset += 1
         self.find_user_data()
-        # проверка наличия кандидата в базе
-
         self.get_photos()
         send_msg(self.user_id, f'Имя: {self.first_name}\n'
                                 f'Фамилия: {self.last_name}\n Профиль: https://vk.com/id{self.dating_user_id}',

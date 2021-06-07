@@ -6,9 +6,10 @@ from sqlalchemy.orm import sessionmaker, relationship
 
 Base = declarative_base() 
 # создаем объект класса Engine (диалект://log:passwd@url:port/db_name)
-engine = sq.create_engine('путь к БД') 
+engine = create_engine('Путь к Ваше БД') 
 Session = sessionmaker(bind=engine)  # Создаем фабрику для создания экземпляров Session
 session = Session()  # Создаем объект сессии из вышесозданной фабрики Session
+
 
 # Таблица с данными пользователя
 class User(Base):
@@ -19,6 +20,8 @@ class User(Base):
     last_name = Column(String)
     range_age = Column(String)
     city = Column(String)
+
+
 
 # Таблица подобранных пар
 class DatingUser(Base):
@@ -31,15 +34,19 @@ class DatingUser(Base):
     Like = Column(Boolean)
     user = relationship(User)
 
+
 # Создать пустые таблицы в БД 
 def create_tables():
     Base.metadata.create_all(engine)  # Метод create_all создает таблицы в БД (если они не сущ-т), определенные с помощью  DeclarativeBase (Base)
+
 
 # Добавляем пользователя в БД
 def add_user(user):
     session.expire_on_commit = False  # По умолчанию True, тогда все экземпляры будут полностью просрочены после каждого commit()
     session.add(user)  # добавление объекта в сессию
     session.commit()  # применяем все изменения в базу данных и фиксируем все транзакции
+
+
 
 # Показать потенциальные пары из БД
 def view_all(user_id):
@@ -63,3 +70,15 @@ def check(user_id):
         return [j.id for j in vk_id_query][0]        
     else:
         return False
+
+# проверяем наличие кандидата в базе
+def check_half(user_id):
+    print('user_id =', user_id)
+    vk_id_query = session.query(DatingUser)
+    vk_id_list = [i.vk_id for i in vk_id_query]
+    if user_id in vk_id_list:
+        return True        
+    else:
+        return False
+
+# 44633124
