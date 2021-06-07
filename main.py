@@ -51,7 +51,7 @@ class R2D2_bot: # основной класс
                 self.user_params.update(city = user_info['city']['title'])
                 self.city = user_info['city']['id']
             else:
-                send_msg(self.user_id, 'Введите название города')
+                send_msg(self.user_id, 'В профиле не указан город, введите название города')
                 for new_event in longpoll.listen():
                     if new_event.type == VkEventType.MESSAGE_NEW and new_event.to_me: 
                         response = requests.get('https://api.vk.com/method/database.getCities',
@@ -190,8 +190,9 @@ class R2D2_bot: # основной класс
             for new_event in longpoll.listen():
                 if new_event.type == VkEventType.MESSAGE_NEW and new_event.to_me:
                     if new_event.message.lower() == 'д':
+
                         dating_user = db.DatingUser(vk_id=self.dating_user_id, first_name=self.first_name,
-                                                    last_name=self.last_name, id_User=self.user.id)
+                                                    last_name=self.last_name, id_User=self.user.id, Like = True)
                         db.add_user(dating_user) # добавляем запись в таблицу 'DatingUser'
                         send_msg(self.user_id, 'Пользователь добавлен в базу, продолжить?')
                         for new_event in longpoll.listen():
@@ -200,6 +201,11 @@ class R2D2_bot: # основной класс
                                     return self.bot_menu()
                                 else:
                                     return self.find_item()
+                    elif new_event.message.lower() == 'н':
+                        dating_user = db.DatingUser(vk_id=self.dating_user_id, first_name=self.first_name,
+                                                    last_name=self.last_name, id_User=self.user.id, Like = False)
+                        db.add_user(dating_user) # добавляем запись в таблицу 'DatingUser'
+                        return self.find_item()
                     elif new_event.message.lower() == 'q':
                         return self.bot_menu()
                     else:
@@ -209,6 +215,8 @@ class R2D2_bot: # основной класс
         send_msg(self.user_id, 'Ищем дальше')
         self.offset += 1
         self.find_user_data()
+        # проверка наличия кандидата в базе
+
         self.get_photos()
         send_msg(self.user_id, f'Имя: {self.first_name}\n'
                                 f'Фамилия: {self.last_name}\n Профиль: https://vk.com/id{self.dating_user_id}',

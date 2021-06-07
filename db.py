@@ -1,15 +1,14 @@
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import create_engine
-from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy import Column, String, Integer, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
 Base = declarative_base() 
 # создаем объект класса Engine (диалект://log:passwd@url:port/db_name)
-engine = sq.create_engine('путь к БД')
+engine = sq.create_engine('путь к БД') 
 Session = sessionmaker(bind=engine)  # Создаем фабрику для создания экземпляров Session
 session = Session()  # Создаем объект сессии из вышесозданной фабрики Session
-
 
 # Таблица с данными пользователя
 class User(Base):
@@ -21,8 +20,6 @@ class User(Base):
     range_age = Column(String)
     city = Column(String)
 
-
-
 # Таблица подобранных пар
 class DatingUser(Base):
     __tablename__ = 'datinguser'
@@ -31,13 +28,12 @@ class DatingUser(Base):
     first_name = Column(String)   # имя
     last_name = Column(String)    # фамилия
     id_User = Column(Integer, ForeignKey('user.id')) # 
+    Like = Column(Boolean)
     user = relationship(User)
-
 
 # Создать пустые таблицы в БД 
 def create_tables():
     Base.metadata.create_all(engine)  # Метод create_all создает таблицы в БД (если они не сущ-т), определенные с помощью  DeclarativeBase (Base)
-
 
 # Добавляем пользователя в БД
 def add_user(user):
@@ -45,15 +41,14 @@ def add_user(user):
     session.add(user)  # добавление объекта в сессию
     session.commit()  # применяем все изменения в базу данных и фиксируем все транзакции
 
-
-
-# Показать пары из БД
+# Показать потенциальные пары из БД
 def view_all(user_id):
     links = []
     id_query = session.query(User.id).order_by(User.id.desc()).filter(User.vk_id == user_id).limit(1)
     id_list = [p.id for p in id_query]
     id_user = id_list[0]
-    dating_users_query = session.query(DatingUser.vk_id).filter(DatingUser.id_User == id_user).all()
+    # Показываем только тех, кого лайкнули
+    dating_users_query = session.query(DatingUser.vk_id).filter(DatingUser.id_User == id_user, DatingUser.Like == True).all()
     dating_users_list = [du.vk_id for du in dating_users_query]
     for link in dating_users_list:
         links.append(link)
@@ -68,7 +63,3 @@ def check(user_id):
         return [j.id for j in vk_id_query][0]        
     else:
         return False
-
-
-
-
